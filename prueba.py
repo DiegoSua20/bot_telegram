@@ -1,37 +1,47 @@
-import asyncio
 import csv
+import asyncio
+from flask import Flask, render_template, request, redirect
 from telegram import Bot
 
-# Token de tu bot
+# --- Configuración del bot ---
 TOKEN = "7983769298:AAEHZLFJFrbx8VqVnsew65trTUqFabz5xw4"
 bot = Bot(token=TOKEN)
+CSV_FILE = "contactos.csv"
 
-# Archivo CSV con contactos
-CSV_FILE = 'contactos.csv'
+# --- Configuración de Flask ---
+app = Flask(__name__)
 
-async def enviar_mensajes():
-    while True:  # Bucle infinito para enviar mensajes cada 2 minutos
-        try:
-            with open(CSV_FILE, newline='', encoding='utf-8') as csvfile:
-                lector = csv.DictReader(csvfile)
-                for fila in lector:
-                    nombre = fila['nombre']
-                    chat_id = int(fila['chat_id'])
-                    monto = fila['monto']
-                    fecha = fila['fecha']
+# Leer contactos del CSV
+def leer_contactos():
+    contactos = []
+    with open(CSV_FILE, newline='', encoding='utf-8') as f:
+        lector = csv.DictReader(f)
+        for fila in lector:
+            contactos.append(fila)
+    return contactos
 
-                    mensaje = f"Hola {nombre}, tienes un monto pendiente de {monto} para la fecha {fecha}."
-                    
-                    try:
-                        await bot.send_message(chat_id=chat_id, text=mensaje)
-                        print(f"Mensaje enviado a {nombre} (chat_id: {chat_id})")
-                    except Exception as e:
-                        print(f"No se pudo enviar el mensaje a {nombre}: {e}")
-        except FileNotFoundError:
-            print(f"No se encontró el archivo {CSV_FILE}. Esperando a que se cree...")
+# Página principal con la lista de contactos
+@app.route("/")
+def index():
+    contactos = leer_contactos()
+    return render_template("index.html", contactos=contactos)
 
-        print("Esperando 2 minutos para el siguiente envío...\n")
-        await asyncio.sleep(120)  # Espera 2 minutos antes de la siguiente iteración
+# Procesar formulario
+@app.route("/enviar", methods=["POST"])
+def enviar():
+    seleccionados = request.form.getlist("contactos")  # chat_id seleccionados
+    monto = request.form["monto"]
+    fecha = request.form["fecha"]
 
-# Ejecutar la función asíncrona
-asyncio.run(enviar_mensajes())
+    # Enviar mensajes con asyncio
+    async def enviar_mensajes():
+        for chat_id in seleccionados:
+            mensaje = f"Hola, tienes un monto pendiente de {monto} para la fecha {fecha}."
+            await bot.send_message(chat_id=int(chat_id), text=mensaje)
+
+    asyncio.run(enviar_mensajes())
+    return redirect("/")
+
+# --- Iniciar servidor Flask ---
+if __name__ == "__main__":
+    app.run(debug=True)
