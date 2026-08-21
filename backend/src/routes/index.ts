@@ -1,0 +1,36 @@
+import { Router } from 'express';
+import { authRouter } from '../modules/auth/auth.routes';
+import { usersRouter } from '../modules/users/users.routes';
+import { rolesRouter } from '../modules/roles/roles.routes';
+import { clientsRouter } from '../modules/clients/clients.routes';
+import { categoriesRouter } from '../modules/categories/categories.routes';
+import { productsRouter } from '../modules/products/products.routes';
+import { inventoryRouter } from '../modules/inventory/inventory.routes';
+import { seriesRouter } from '../modules/series/series.routes';
+import { invoicesRouter } from '../modules/invoices/invoices.routes';
+import { creditRouter } from '../modules/credit/credit.routes';
+import { cashRouter } from '../modules/cash/cash.routes';
+import { expensesRouter } from '../modules/expenses/expenses.routes';
+import { dashboardRouter } from '../modules/dashboard/dashboard.routes';
+import { reportsRouter } from '../modules/reports/reports.routes';
+import { companyRouter } from '../modules/company/company.routes';
+import { auditRouter } from '../modules/audit/audit.routes';
+
+export const apiRouter = Router();
+
+apiRouter.use('/auth', authRouter);
+apiRouter.use('/users', usersRouter);
+apiRouter.use('/roles', rolesRouter);
+apiRouter.use('/clients', clientsRouter);
+apiRouter.use('/categories', categoriesRouter);
+apiRouter.use('/products', productsRouter);
+apiRouter.use('/inventory', inventoryRouter);
+apiRouter.use('/series', seriesRouter);
+apiRouter.use('/invoices', invoicesRouter);
+apiRouter.use('/credit-accounts', creditRouter);
+apiRouter.use('/cash-sessions', cashRouter);
+apiRouter.use('/expenses', expensesRouter);
+apiRouter.use('/dashboard', dashboardRouter);
+apiRouter.use('/reports', reportsRouter);
+apiRouter.use('/company-config', companyRouter);
+apiRouter.use('/audit-logs', auditRouter);

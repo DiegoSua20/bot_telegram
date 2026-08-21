@@ -1,0 +1,406 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ENUMS ============
+
+enum MovementType {
+  ENTRADA
+  SALIDA
+  AJUSTE
+}
+
+enum ProductType {
+  PRODUCTO
+  SERVICIO
+}
+
+enum InvoiceStatus {
+  EMITIDA
+  PAGADA
+  PENDIENTE
+  PARCIAL
+  ANULADA
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
+  CHEQUE
+  CREDITO
+  COMBINADO
+}
+
+enum CreditStatus {
+  PENDIENTE
+  PARCIAL
+  PAGADO
+  VENCIDO
+}
+
+enum CashSessionStatus {
+  ABIERTA
+  CERRADA
+}
+
+enum CashMovementType {
+  VENTA_EFECTIVO
+  VENTA_TARJETA
+  VENTA_TRANSFERENCIA
+  VENTA_CHEQUE
+  VENTA_OTRO
+  INGRESO
+  EGRESO
+  GASTO
+}
+
+// ============ SEGURIDAD / USUARIOS ============
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  permissions RolePermission[]
+  users       User[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  module      String
+  description String?
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id                   String    @id @default(uuid())
+  name                 String
+  username             String    @unique
+  email                String    @unique
+  passwordHash         String
+  roleId               String
+  role                 Role      @relation(fields: [roleId], references: [id])
+  active               Boolean   @default(true)
+  lastLoginAt          DateTime?
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  invoicesCreated Invoice[]            @relation("InvoiceUser")
+  invoicesVoided  Invoice[]            @relation("InvoiceVoidedBy")
+  cashSessions    CashSession[]
+  auditLogs       AuditLog[]
+  inventoryMoves  InventoryMovement[]
+  expenses        Expense[]
+  creditPayments  CreditPayment[]
+
+  @@map("users")
+}
+
+// ============ CLIENTES ============
+
+model Client {
+  id             String          @id @default(uuid())
+  code           String          @unique
+  name           String
+  taxId          String?
+  address        String?
+  phone          String?
+  email          String?
+  contact        String?
+  notes          String?
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  invoices       Invoice[]
+  creditAccounts CreditAccount[]
+
+  @@index([name])
+  @@map("clients")
+}
+
+// ============ PRODUCTOS / CATEGORIAS ============
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  active      Boolean   @default(true)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("categories")
+}
+
+model Product {
+  id             String              @id @default(uuid())
+  sku            String              @unique
+  barcode        String?             @unique
+  name           String
+  description    String?
+  categoryId     String?
+  category       Category?           @relation(fields: [categoryId], references: [id])
+  type           ProductType         @default(PRODUCTO)
+  salePrice      Decimal             @db.Decimal(12, 2)
+  costPrice      Decimal             @default(0) @db.Decimal(12, 2)
+  taxRate        Decimal             @default(12) @db.Decimal(5, 2)
+  trackInventory Boolean             @default(true)
+  stock          Decimal             @default(0) @db.Decimal(12, 2)
+  minStock       Decimal             @default(0) @db.Decimal(12, 2)
+  unit           String              @default("UNIDAD")
+  active         Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  movements      InventoryMovement[]
+  invoiceDetails InvoiceDetail[]
+
+  @@index([name])
+  @@map("products")
+}
+
+// ============ INVENTARIO ============
+
+model InventoryMovement {
+  id           String       @id @default(uuid())
+  productId    String
+  product      Product      @relation(fields: [productId], references: [id])
+  type         MovementType
+  quantity     Decimal      @db.Decimal(12, 2)
+  balanceAfter Decimal      @db.Decimal(12, 2)
+  reason       String
+  reference    String?
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  createdAt    DateTime     @default(now())
+
+  @@index([productId, createdAt])
+  @@map("inventory_movements")
+}
+
+// ============ SERIES / CORRELATIVOS ============
+
+model Series {
+  id            String    @id @default(uuid())
+  name          String    @unique
+  currentNumber Int       @default(0)
+  active        Boolean   @default(true)
+  invoices      Invoice[]
+
+  @@map("series")
+}
+
+// ============ FACTURACION ============
+
+model Invoice {
+  id            String         @id @default(uuid())
+  seriesId      String
+  series        Series         @relation(fields: [seriesId], references: [id])
+  number        Int
+  fullNumber    String         @unique
+  clientId      String
+  client        Client         @relation(fields: [clientId], references: [id])
+  userId        String
+  user          User           @relation("InvoiceUser", fields: [userId], references: [id])
+  subtotal      Decimal        @db.Decimal(12, 2)
+  discount      Decimal        @default(0) @db.Decimal(12, 2)
+  tax           Decimal        @db.Decimal(12, 2)
+  total         Decimal        @db.Decimal(12, 2)
+  status        InvoiceStatus  @default(EMITIDA)
+  paymentMethod PaymentMethod
+  notes         String?
+  cashSessionId String?
+  cashSession   CashSession?   @relation(fields: [cashSessionId], references: [id])
+  cancelReason  String?
+  cancelledById String?
+  cancelledBy   User?          @relation("InvoiceVoidedBy", fields: [cancelledById], references: [id])
+  cancelledAt   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  details       InvoiceDetail[]
+  payments      Payment[]
+  creditAccount CreditAccount?
+
+  @@unique([seriesId, number])
+  @@index([createdAt])
+  @@index([status])
+  @@map("invoices")
+}
+
+model InvoiceDetail {
+  id        String  @id @default(uuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Decimal @db.Decimal(12, 2)
+  unitPrice Decimal @db.Decimal(12, 2)
+  discount  Decimal @default(0) @db.Decimal(12, 2)
+  taxRate   Decimal @db.Decimal(5, 2)
+  taxAmount Decimal @db.Decimal(12, 2)
+  lineTotal Decimal @db.Decimal(12, 2)
+
+  @@map("invoice_details")
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  invoiceId String
+  invoice   Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(12, 2)
+  reference String?
+  createdAt DateTime      @default(now())
+
+  @@map("payments")
+}
+
+// ============ CREDITO / CUENTAS POR COBRAR ============
+
+model CreditAccount {
+  id          String          @id @default(uuid())
+  invoiceId   String          @unique
+  invoice     Invoice         @relation(fields: [invoiceId], references: [id])
+  clientId    String
+  client      Client          @relation(fields: [clientId], references: [id])
+  totalAmount Decimal         @db.Decimal(12, 2)
+  paidAmount  Decimal         @default(0) @db.Decimal(12, 2)
+  balance     Decimal         @db.Decimal(12, 2)
+  dueDate     DateTime
+  status      CreditStatus    @default(PENDIENTE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  payments    CreditPayment[]
+
+  @@index([status])
+  @@map("credit_accounts")
+}
+
+model CreditPayment {
+  id              String        @id @default(uuid())
+  creditAccountId String
+  creditAccount   CreditAccount @relation(fields: [creditAccountId], references: [id])
+  amount          Decimal       @db.Decimal(12, 2)
+  method          PaymentMethod
+  reference       String?
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  createdAt       DateTime      @default(now())
+
+  @@map("credit_payments")
+}
+
+// ============ CAJA ============
+
+model CashSession {
+  id             String             @id @default(uuid())
+  userId         String
+  user           User               @relation(fields: [userId], references: [id])
+  openedAt       DateTime           @default(now())
+  closedAt       DateTime?
+  openingAmount  Decimal            @db.Decimal(12, 2)
+  expectedAmount Decimal?           @db.Decimal(12, 2)
+  declaredAmount Decimal?           @db.Decimal(12, 2)
+  difference     Decimal?           @db.Decimal(12, 2)
+  status         CashSessionStatus  @default(ABIERTA)
+  notes          String?
+
+  invoices  Invoice[]
+  movements CashMovement[]
+
+  @@map("cash_sessions")
+}
+
+model CashMovement {
+  id            String           @id @default(uuid())
+  cashSessionId String
+  cashSession   CashSession      @relation(fields: [cashSessionId], references: [id])
+  type          CashMovementType
+  amount        Decimal          @db.Decimal(12, 2)
+  description   String?
+  reference     String?
+  createdAt     DateTime         @default(now())
+
+  @@map("cash_movements")
+}
+
+// ============ GASTOS ============
+
+model Expense {
+  id            String        @id @default(uuid())
+  date          DateTime      @default(now())
+  category      String
+  description   String
+  amount        Decimal       @db.Decimal(12, 2)
+  paymentMethod PaymentMethod
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  referenceDoc  String?
+  createdAt     DateTime      @default(now())
+
+  @@map("expenses")
+}
+
+// ============ CONFIGURACION EMPRESA ============
+
+model CompanyConfig {
+  id             String   @id @default(uuid())
+  tradeName      String
+  legalName      String
+  taxId          String
+  address        String?
+  phone          String?
+  email          String?
+  logoUrl        String?
+  currency       String   @default("GTQ")
+  currencySymbol String   @default("Q")
+  defaultTaxRate Decimal  @default(12) @db.Decimal(5, 2)
+  country        String   @default("Guatemala")
+  invoiceFormat  String   @default("A4")
+  allowOversell  Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+
+  @@map("company_config")
+}
+
+// ============ AUDITORIA ============
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  module    String
+  recordId  String?
+  oldData   Json?
+  newData   Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([module, createdAt])
+  @@map("audit_logs")
+}
