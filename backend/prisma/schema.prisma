@@ -325,6 +325,7 @@ model CashSession {
   openingAmount  Decimal            @db.Decimal(12, 2)
   expectedAmount Decimal?           @db.Decimal(12, 2)
   declaredAmount Decimal?           @db.Decimal(12, 2)
+  declaredBreakdown Json?
   difference     Decimal?           @db.Decimal(12, 2)
   status         CashSessionStatus  @default(ABIERTA)
   notes          String?

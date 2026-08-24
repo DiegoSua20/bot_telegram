@@ -180,6 +180,12 @@ export interface CompanyConfig {
   allowOversell: boolean;
 }
 
+export interface CashDenominationCount {
+  denomination: number;
+  quantity: number;
+  subtotal: number;
+}
+
 export interface CashSession {
   id: string;
   userId: string;
@@ -189,9 +195,26 @@ export interface CashSession {
   openingAmount: string | number;
   expectedAmount?: string | number | null;
   declaredAmount?: string | number | null;
+  declaredBreakdown?: CashDenominationCount[] | null;
   difference?: string | number | null;
   status: 'ABIERTA' | 'CERRADA';
   notes?: string | null;
+  movements?: CashMovementEntry[];
+}
+
+export interface CashMovementEntry {
+  id: string;
+  type: string;
+  amount: string | number;
+  description?: string | null;
+  reference?: string | null;
+  createdAt: string;
+}
+
+export interface CashSessionSummary {
+  session: CashSession;
+  totals: Record<string, number>;
+  expectedCash: number;
 }
 
 export interface Expense {

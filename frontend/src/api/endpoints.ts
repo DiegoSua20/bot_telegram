@@ -2,6 +2,7 @@ import { api } from './client';
 import type {
   AuditLog,
   CashSession,
+  CashSessionSummary,
   Category,
   Client,
   CompanyConfig,
@@ -113,10 +114,10 @@ export const creditApi = {
 export const cashApi = {
   list: (params: Record<string, string>) => api.get<PaginatedResult<CashSession>>('/cash-sessions', { params }),
   current: () => api.get<CashSession | null>('/cash-sessions/current'),
-  summary: (id: string) => api.get(`/cash-sessions/${id}/summary`),
+  summary: (id: string) => api.get<CashSessionSummary>(`/cash-sessions/${id}/summary`),
   open: (openingAmount: number, notes?: string) => api.post<CashSession>('/cash-sessions/open', { openingAmount, notes }),
-  close: (id: string, declaredAmount: number, notes?: string) =>
-    api.post<CashSession>(`/cash-sessions/${id}/close`, { declaredAmount, notes }),
+  close: (id: string, breakdown: { denomination: number; quantity: number }[], notes?: string) =>
+    api.post<CashSession>(`/cash-sessions/${id}/close`, { breakdown, notes }),
   manualMovement: (id: string, data: unknown) => api.post(`/cash-sessions/${id}/movements`, data),
 };
 

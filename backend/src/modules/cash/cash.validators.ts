@@ -10,7 +10,14 @@ export const openSessionSchema = z.object({
 export const closeSessionSchema = z.object({
   params: z.object({ id: z.string().uuid() }),
   body: z.object({
-    declaredAmount: z.number().nonnegative(),
+    breakdown: z
+      .array(
+        z.object({
+          denomination: z.number().positive(),
+          quantity: z.number().int().nonnegative(),
+        }),
+      )
+      .min(1, 'Debe indicar el conteo de efectivo'),
     notes: z.string().optional(),
   }),
 });

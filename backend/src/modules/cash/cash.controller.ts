@@ -23,7 +23,7 @@ export const openSession = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const closeSession = asyncHandler(async (req: Request, res: Response) => {
-  const session = await cashService.closeSession(req.params.id, req.body.declaredAmount, req.body.notes);
+  const session = await cashService.closeSession(req.params.id, req.body.breakdown, req.body.notes);
   await writeAudit({ userId: req.user!.id, action: 'CLOSE', module: 'cash', recordId: session.id, newData: session });
   res.json(session);
 });

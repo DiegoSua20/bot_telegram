@@ -126,12 +126,31 @@ export async function openSession(userId: string, openingAmount: number, notes?:
   return prisma.cashSession.create({ data: { userId, openingAmount, notes } });
 }
 
-export async function closeSession(cashSessionId: string, declaredAmount: number, notes?: string) {
+export interface DenominationCount {
+  denomination: number;
+  quantity: number;
+}
+
+export async function closeSession(
+  cashSessionId: string,
+  breakdown: DenominationCount[],
+  notes?: string,
+) {
   const { session, expectedCash } = await getSessionSummary(cashSessionId);
   if (session.status === 'CERRADA') {
     throw ApiError.conflict('Esta caja ya fue cerrada');
   }
-  const difference = declaredAmount - expectedCash;
+
+  const cleanBreakdown = breakdown
+    .filter((row) => row.quantity > 0)
+    .map((row) => ({
+      denomination: row.denomination,
+      quantity: row.quantity,
+      subtotal: Math.round(row.denomination * row.quantity * 100) / 100,
+    }));
+  const declaredAmount = Math.round(cleanBreakdown.reduce((acc, row) => acc + row.subtotal, 0) * 100) / 100;
+  const difference = Math.round((declaredAmount - expectedCash) * 100) / 100;
+
   return prisma.cashSession.update({
     where: { id: cashSessionId },
     data: {
@@ -139,6 +158,7 @@ export async function closeSession(cashSessionId: string, declaredAmount: number
       closedAt: new Date(),
       expectedAmount: expectedCash,
       declaredAmount,
+      declaredBreakdown: cleanBreakdown,
       difference,
       notes,
     },
