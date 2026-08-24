@@ -1,18 +1,26 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
+import toast from 'react-hot-toast';
+import { Ban } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Input, Select } from '../components/ui/Input';
 import { Table, Column } from '../components/ui/Table';
 import { Pagination } from '../components/ui/Pagination';
 import { StatusBadge } from '../components/ui/Badge';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { invoicesApi } from '../api/endpoints';
+import { getErrorMessage } from '../api/client';
 import { Invoice } from '../types';
 import { useCurrency } from '../hooks/useCurrency';
+import { useAuthStore } from '../store/authStore';
+import { PERMISSIONS } from '../constants/permissions';
 
 export function InvoicesPage() {
   const { format } = useCurrency();
+  const queryClient = useQueryClient();
+  const canVoid = useAuthStore((s) => s.hasPermission(PERMISSIONS.INVOICES_VOID));
   const [filters, setFilters] = useState({
     fullNumber: '',
     clientId: '',
@@ -22,10 +30,23 @@ export function InvoicesPage() {
     paymentMethod: '',
   });
   const [page, setPage] = useState(1);
+  const [invoiceToCancel, setInvoiceToCancel] = useState<Invoice | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['invoices', filters, page],
     queryFn: () => invoicesApi.list({ ...filters, page: String(page), pageSize: '15' }).then((r) => r.data),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (reason: string) => invoicesApi.cancel(invoiceToCancel!.id, reason),
+    onSuccess: () => {
+      toast.success(`Factura ${invoiceToCancel?.fullNumber} anulada correctamente`);
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice', invoiceToCancel?.id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      setInvoiceToCancel(null);
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const setFilter = (key: keyof typeof filters, value: string) => {
@@ -49,6 +70,21 @@ export function InvoicesPage() {
     { key: 'total', header: 'Total', render: (inv) => format(inv.total) },
     { key: 'method', header: 'Metodo de pago', render: (inv) => inv.paymentMethod },
     { key: 'status', header: 'Estado', render: (inv) => <StatusBadge status={inv.status} /> },
+    {
+      key: 'actions',
+      header: '',
+      className: 'text-right',
+      render: (inv) =>
+        canVoid && inv.status !== 'ANULADA' ? (
+          <button
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+            onClick={() => setInvoiceToCancel(inv)}
+            title="Anular esta factura"
+          >
+            <Ban size={14} /> Anular
+          </button>
+        ) : null,
+    },
   ];
 
   return (
@@ -90,6 +126,23 @@ export function InvoicesPage() {
 
       <Table columns={columns} data={data?.items ?? []} rowKey={(i) => i.id} loading={isLoading} />
       {data && <Pagination pagination={data.pagination} onPageChange={setPage} />}
+
+      <ConfirmDialog
+        open={!!invoiceToCancel}
+        options={
+          invoiceToCancel && {
+            title: 'Anular factura',
+            message: `Esta accion anulara la factura ${invoiceToCancel.fullNumber} (${format(invoiceToCancel.total)}) y reintegrara las existencias vendidas. Esta accion no se puede deshacer.`,
+            requireReason: true,
+            reasonLabel: 'Motivo de anulacion',
+            danger: true,
+            confirmLabel: 'Anular factura',
+          }
+        }
+        onCancel={() => setInvoiceToCancel(null)}
+        onConfirm={(reason) => cancelMutation.mutate(reason ?? '')}
+        loading={cancelMutation.isPending}
+      />
     </div>
   );
 }

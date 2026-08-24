@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Search, Trash2, ScanBarcode, Plus, X } from 'lucide-react';
+import { Search, Trash2, ScanBarcode, Plus, UserPen } from 'lucide-react';
 import { cashApi, clientsApi, invoicesApi, productsApi, seriesApi } from '../api/endpoints';
 import { getErrorMessage } from '../api/client';
 import { openBlobInNewTab } from '../utils/download';
@@ -11,7 +11,10 @@ import { Card } from '../components/ui/Card';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Input, Select, Textarea } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
 import { useCurrency } from '../hooks/useCurrency';
+
+const DEFAULT_CLIENT_NAME = 'Consumidor Final';
 
 interface CartItem {
   productId: string;
@@ -73,6 +76,8 @@ export function InvoicingPage() {
   const [seriesId, setSeriesId] = useState('');
   const [clientSearch, setClientSearch] = useState('');
   const [client, setClient] = useState<Client | null>(null);
+  const [clientTouched, setClientTouched] = useState(false);
+  const productSearchRef = useRef<HTMLInputElement>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('EFECTIVO');
   const [payments, setPayments] = useState<PaymentRow[]>([{ method: 'EFECTIVO', amount: 0, reference: '' }]);
   const [creditDueDate, setCreditDueDate] = useState('');
@@ -89,6 +94,11 @@ export function InvoicingPage() {
     enabled: clientSearch.length > 1,
   });
 
+  const { data: defaultClientResults } = useQuery({
+    queryKey: ['pos-default-client'],
+    queryFn: () => clientsApi.search(DEFAULT_CLIENT_NAME).then((r) => r.data),
+  });
+
   const { data: series } = useQuery({ queryKey: ['series'], queryFn: () => seriesApi.list().then((r) => r.data) });
   const { data: cashSession } = useQuery({ queryKey: ['cash-current'], queryFn: () => cashApi.current().then((r) => r.data) });
 
@@ -98,6 +108,15 @@ export function InvoicingPage() {
       if (active) setSeriesId(active.id);
     }
   }, [series, seriesId]);
+
+  // Facturar sin elegir cliente cada vez: se preselecciona "Consumidor Final"
+  // y solo se cambia si el cajero explicitamente busca otro cliente.
+  useEffect(() => {
+    if (!client && !clientTouched && defaultClientResults && defaultClientResults.length > 0) {
+      const exactMatch = defaultClientResults.find((c) => c.name.toLowerCase() === DEFAULT_CLIENT_NAME.toLowerCase());
+      setClient(exactMatch ?? defaultClientResults[0]);
+    }
+  }, [defaultClientResults, client, clientTouched]);
 
   const totals = useMemo(() => calcTotals(cart, globalDiscount), [cart, globalDiscount]);
   const paymentsTotal = useMemo(() => round2(payments.reduce((a, p) => a + (Number(p.amount) || 0), 0)), [payments]);
@@ -132,6 +151,13 @@ export function InvoicingPage() {
       ];
     });
     setProductSearch('');
+    productSearchRef.current?.focus();
+  };
+
+  const handleProductSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && productResults && productResults.length > 0) {
+      addToCart(productResults[0]);
+    }
   };
 
   const handleBarcodeSubmit = async () => {
@@ -158,9 +184,11 @@ export function InvoicingPage() {
     setGlobalDiscount(0);
     setNotes('');
     setClient(null);
+    setClientTouched(false);
     setPaymentMethod('EFECTIVO');
     setPayments([{ method: 'EFECTIVO', amount: 0, reference: '' }]);
     setCreditDueDate('');
+    productSearchRef.current?.focus();
   };
 
   const createMutation = useMutation({
@@ -227,10 +255,13 @@ export function InvoicingPage() {
               <div className="relative flex-1 min-w-[220px]">
                 <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
                 <Input
+                  ref={productSearchRef}
+                  autoFocus
                   className="pl-9"
-                  placeholder="Buscar producto por nombre o SKU"
+                  placeholder="Buscar producto por nombre o SKU (Enter agrega el primero)"
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
+                  onKeyDown={handleProductSearchKeyDown}
                 />
                 {productResults && productResults.length > 0 && (
                   <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
@@ -342,20 +373,34 @@ export function InvoicingPage() {
 
         <div className="space-y-4">
           <Card>
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Cliente</h3>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Cliente</h3>
+              {client && client.name === DEFAULT_CLIENT_NAME && <Badge tone="gray">Generico</Badge>}
+            </div>
             {client ? (
               <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
                 <div>
                   <p className="text-sm font-medium">{client.name}</p>
                   <p className="text-xs text-slate-500">{client.code} - {client.taxId || 'C/F'}</p>
                 </div>
-                <button onClick={() => setClient(null)} className="text-slate-400 hover:text-slate-600">
-                  <X size={16} />
+                <button
+                  onClick={() => {
+                    setClient(null);
+                    setClientTouched(true);
+                  }}
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50"
+                  title="Elegir otro cliente"
+                >
+                  <UserPen size={14} /> Cambiar
                 </button>
               </div>
             ) : (
               <div className="relative">
-                <Input placeholder="Buscar cliente por nombre, codigo o NIT" value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} />
+                <Input
+                  placeholder="Buscar cliente por nombre, codigo o NIT"
+                  value={clientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                />
                 {clientResults && clientResults.length > 0 && (
                   <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                     {clientResults.map((c) => (
@@ -364,6 +409,7 @@ export function InvoicingPage() {
                         className="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-slate-50"
                         onClick={() => {
                           setClient(c);
+                          setClientTouched(true);
                           setClientSearch('');
                         }}
                       >
