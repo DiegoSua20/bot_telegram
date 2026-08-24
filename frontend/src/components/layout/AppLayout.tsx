@@ -17,15 +17,17 @@ export function AppLayout() {
   }, [setConfig]);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-[#f4f5fa]">
       <Sidebar open={sidebarOpen} />
       {sidebarOpen && (
-        <div className="fixed inset-0 z-20 bg-black/30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 z-20 bg-slate-900/40 backdrop-blur-[1px] lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onToggleSidebar={() => setSidebarOpen((v) => !v)} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-[1400px]">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

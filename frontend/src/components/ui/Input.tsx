@@ -9,14 +9,14 @@ interface FieldWrapperProps {
 }
 
 const baseInputClasses =
-  'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-gray-100 disabled:text-gray-500';
+  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-colors focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 disabled:bg-slate-50 disabled:text-slate-400';
 
 function FieldLabel({ label, required, error }: { label?: string; required?: boolean; error?: string }) {
   if (!label) return null;
   return (
-    <label className="mb-1 block text-xs font-medium text-gray-700">
-      {label} {required && <span className="text-red-500">*</span>}
-      {error && <span className="ml-2 text-red-500">{error}</span>}
+    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+      {label} {required && <span className="text-rose-500">*</span>}
+      {error && <span className="ml-2 normal-case tracking-normal text-rose-500">{error}</span>}
     </label>
   );
 }
@@ -27,10 +27,10 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
       <FieldLabel label={label} required={required} error={error} />
       <input
         ref={ref}
-        className={clsx(baseInputClasses, error && 'border-red-400', className)}
+        className={clsx(baseInputClasses, error && 'border-rose-400', className)}
         {...props}
       />
-      {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
     </div>
   ),
 );
@@ -42,8 +42,8 @@ export const Textarea = forwardRef<
 >(({ label, error, hint, required, className, ...props }, ref) => (
   <div className="w-full">
     <FieldLabel label={label} required={required} error={error} />
-    <textarea ref={ref} className={clsx(baseInputClasses, error && 'border-red-400', className)} {...props} />
-    {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+    <textarea ref={ref} className={clsx(baseInputClasses, error && 'border-rose-400', className)} {...props} />
+    {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
   </div>
 ));
 Textarea.displayName = 'Textarea';
@@ -57,7 +57,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, hint, required, className, options, placeholder, ...props }, ref) => (
     <div className="w-full">
       <FieldLabel label={label} required={required} error={error} />
-      <select ref={ref} className={clsx(baseInputClasses, error && 'border-red-400', className)} {...props}>
+      <select ref={ref} className={clsx(baseInputClasses, error && 'border-rose-400', className)} {...props}>
         {placeholder && <option value="">{placeholder}</option>}
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -65,7 +65,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           </option>
         ))}
       </select>
-      {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
     </div>
   ),
 );

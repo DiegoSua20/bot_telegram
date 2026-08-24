@@ -225,7 +225,7 @@ export function InvoicingPage() {
           <Card>
             <div className="flex flex-wrap gap-2">
               <div className="relative flex-1 min-w-[220px]">
-                <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
+                <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
                 <Input
                   className="pl-9"
                   placeholder="Buscar producto por nombre o SKU"
@@ -233,22 +233,22 @@ export function InvoicingPage() {
                   onChange={(e) => setProductSearch(e.target.value)}
                 />
                 {productResults && productResults.length > 0 && (
-                  <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                  <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                     {productResults.map((p) => (
                       <button
                         key={p.id}
-                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
+                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
                         onClick={() => addToCart(p)}
                       >
                         <span>{p.name}</span>
-                        <span className="text-xs text-gray-400">{format(p.salePrice)}</span>
+                        <span className="text-xs text-slate-400">{format(p.salePrice)}</span>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
               <div className="relative w-52">
-                <ScanBarcode size={16} className="absolute left-3 top-2.5 text-gray-400" />
+                <ScanBarcode size={16} className="absolute left-3 top-2.5 text-slate-400" />
                 <Input
                   className="pl-9"
                   placeholder="Codigo de barras + Enter"
@@ -259,22 +259,22 @@ export function InvoicingPage() {
               </div>
             </div>
 
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
+            <div className="mt-4 overflow-hidden rounded-xl border border-slate-100">
+              <table className="min-w-full divide-y divide-slate-100 text-sm">
+                <thead className="bg-slate-50/80">
                   <tr>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">Producto</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">Cant.</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">Precio</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">Desc.</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">Total</th>
+                    <th className="px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">Producto</th>
+                    <th className="px-3 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">Cant.</th>
+                    <th className="px-3 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">Precio</th>
+                    <th className="px-3 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">Desc.</th>
+                    <th className="px-3 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">Total</th>
                     <th />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-slate-100">
                   {cart.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-3 py-10 text-center text-gray-400">
+                      <td colSpan={6} className="px-3 py-10 text-center text-slate-400">
                         Agregue productos para iniciar la venta
                       </td>
                     </tr>
@@ -283,10 +283,10 @@ export function InvoicingPage() {
                     const net = Math.max(0, item.quantity * item.unitPrice - item.discount);
                     const lineTotal = round2(net + net * (item.taxRate / 100));
                     return (
-                      <tr key={item.productId}>
+                      <tr key={item.productId} className="transition-colors hover:bg-brand-50/30">
                         <td className="px-3 py-2">
-                          <p className="font-medium text-gray-800">{item.name}</p>
-                          <p className="text-xs text-gray-400">
+                          <p className="font-medium text-slate-800">{item.name}</p>
+                          <p className="text-xs text-slate-400">
                             {item.sku}
                             {item.trackInventory && ` - Disp: ${item.stock}`}
                           </p>
@@ -296,7 +296,7 @@ export function InvoicingPage() {
                             type="number"
                             min={0.01}
                             step="0.01"
-                            className="w-20 rounded border border-gray-300 px-2 py-1 text-right text-sm"
+                            className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-right text-sm transition-colors focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10"
                             value={item.quantity}
                             onChange={(e) => updateCartItem(item.productId, { quantity: Number(e.target.value) || 0 })}
                           />
@@ -306,7 +306,7 @@ export function InvoicingPage() {
                             type="number"
                             min={0}
                             step="0.01"
-                            className="w-24 rounded border border-gray-300 px-2 py-1 text-right text-sm"
+                            className="w-24 rounded-lg border border-slate-200 px-2 py-1.5 text-right text-sm transition-colors focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10"
                             value={item.unitPrice}
                             onChange={(e) => updateCartItem(item.productId, { unitPrice: Number(e.target.value) || 0 })}
                           />
@@ -316,14 +316,14 @@ export function InvoicingPage() {
                             type="number"
                             min={0}
                             step="0.01"
-                            className="w-20 rounded border border-gray-300 px-2 py-1 text-right text-sm"
+                            className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-right text-sm transition-colors focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10"
                             value={item.discount}
                             onChange={(e) => updateCartItem(item.productId, { discount: Number(e.target.value) || 0 })}
                           />
                         </td>
                         <td className="px-3 py-2 text-right font-medium">{format(lineTotal)}</td>
                         <td className="px-3 py-2 text-right">
-                          <button className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600" onClick={() => removeFromCart(item.productId)}>
+                          <button className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600" onClick={() => removeFromCart(item.productId)}>
                             <Trash2 size={15} />
                           </button>
                         </td>
@@ -342,14 +342,14 @@ export function InvoicingPage() {
 
         <div className="space-y-4">
           <Card>
-            <h3 className="mb-2 text-sm font-semibold text-gray-800">Cliente</h3>
+            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Cliente</h3>
             {client ? (
-              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
                 <div>
                   <p className="text-sm font-medium">{client.name}</p>
-                  <p className="text-xs text-gray-500">{client.code} - {client.taxId || 'C/F'}</p>
+                  <p className="text-xs text-slate-500">{client.code} - {client.taxId || 'C/F'}</p>
                 </div>
-                <button onClick={() => setClient(null)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setClient(null)} className="text-slate-400 hover:text-slate-600">
                   <X size={16} />
                 </button>
               </div>
@@ -357,18 +357,18 @@ export function InvoicingPage() {
               <div className="relative">
                 <Input placeholder="Buscar cliente por nombre, codigo o NIT" value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} />
                 {clientResults && clientResults.length > 0 && (
-                  <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                  <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                     {clientResults.map((c) => (
                       <button
                         key={c.id}
-                        className="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-gray-50"
+                        className="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-slate-50"
                         onClick={() => {
                           setClient(c);
                           setClientSearch('');
                         }}
                       >
                         <span>{c.name}</span>
-                        <span className="text-xs text-gray-400">{c.code}</span>
+                        <span className="text-xs text-slate-400">{c.code}</span>
                       </button>
                     ))}
                   </div>
@@ -388,7 +388,7 @@ export function InvoicingPage() {
           </Card>
 
           <Card>
-            <h3 className="mb-2 text-sm font-semibold text-gray-800">Totales</h3>
+            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Totales</h3>
             <div className="mb-2">
               <Input
                 label="Descuento global"
@@ -400,23 +400,23 @@ export function InvoicingPage() {
               />
             </div>
             <div className="space-y-1 text-sm">
-              <div className="flex justify-between text-gray-600">
+              <div className="flex justify-between text-slate-600">
                 <span>Subtotal</span>
                 <span>{format(totals.subtotal)}</span>
               </div>
-              <div className="flex justify-between text-gray-600">
+              <div className="flex justify-between text-slate-600">
                 <span>Impuesto</span>
                 <span>{format(totals.tax)}</span>
               </div>
-              <div className="flex justify-between border-t border-gray-200 pt-1 text-base font-semibold text-gray-900">
-                <span>Total</span>
-                <span>{format(totals.total)}</span>
-              </div>
+            </div>
+            <div className="mt-3 flex items-center justify-between rounded-xl bg-gradient-to-br from-brand-600 to-brand-700 px-4 py-3 shadow-sm shadow-brand-600/25">
+              <span className="text-sm font-semibold text-brand-100">Total a pagar</span>
+              <span className="font-display text-xl font-bold text-white">{format(totals.total)}</span>
             </div>
           </Card>
 
           <Card>
-            <h3 className="mb-2 text-sm font-semibold text-gray-800">Forma de pago</h3>
+            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Forma de pago</h3>
             <Select
               value={paymentMethod}
               onChange={(e) => {
@@ -466,7 +466,7 @@ export function InvoicingPage() {
                     />
                     {paymentMethod === 'COMBINADO' && payments.length > 1 && (
                       <button
-                        className="mb-2 rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                        className="mb-2 rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                         onClick={() => setPayments((prev) => prev.filter((_, i) => i !== idx))}
                       >
                         <Trash2 size={15} />
@@ -492,7 +492,7 @@ export function InvoicingPage() {
             )}
           </Card>
 
-          <Button className="w-full" size="md" loading={createMutation.isPending} onClick={handleSubmit}>
+          <Button className="w-full !py-3.5 text-base" size="md" loading={createMutation.isPending} onClick={handleSubmit}>
             Generar factura
           </Button>
         </div>

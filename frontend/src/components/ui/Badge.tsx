@@ -4,17 +4,32 @@ import clsx from 'clsx';
 type Tone = 'gray' | 'green' | 'red' | 'yellow' | 'blue' | 'purple';
 
 const toneClasses: Record<Tone, string> = {
-  gray: 'bg-gray-100 text-gray-700',
-  green: 'bg-emerald-100 text-emerald-700',
-  red: 'bg-red-100 text-red-700',
-  yellow: 'bg-amber-100 text-amber-700',
-  blue: 'bg-blue-100 text-blue-700',
-  purple: 'bg-purple-100 text-purple-700',
+  gray: 'bg-slate-100 text-slate-600 ring-slate-200',
+  green: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  red: 'bg-rose-50 text-rose-700 ring-rose-200',
+  yellow: 'bg-amber-50 text-amber-700 ring-amber-200',
+  blue: 'bg-brand-50 text-brand-700 ring-brand-200',
+  purple: 'bg-violet-50 text-violet-700 ring-violet-200',
+};
+
+const dotClasses: Record<Tone, string> = {
+  gray: 'bg-slate-400',
+  green: 'bg-emerald-500',
+  red: 'bg-rose-500',
+  yellow: 'bg-amber-500',
+  blue: 'bg-brand-500',
+  purple: 'bg-violet-500',
 };
 
 export function Badge({ children, tone = 'gray' }: { children: ReactNode; tone?: Tone }) {
   return (
-    <span className={clsx('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', toneClasses[tone])}>
+    <span
+      className={clsx(
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
+        toneClasses[tone],
+      )}
+    >
+      <span className={clsx('h-1.5 w-1.5 rounded-full', dotClasses[tone])} />
       {children}
     </span>
   );

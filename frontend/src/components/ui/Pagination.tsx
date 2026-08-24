@@ -4,9 +4,10 @@ import { Button } from './Button';
 export function Pagination({ pagination, onPageChange }: { pagination: PaginationType; onPageChange: (page: number) => void }) {
   if (pagination.totalPages <= 1) return null;
   return (
-    <div className="flex items-center justify-between px-1 py-3 text-sm text-gray-600">
+    <div className="flex items-center justify-between px-1 py-4 text-sm text-slate-500">
       <span>
-        Pagina {pagination.page} de {pagination.totalPages} ({pagination.total} registros)
+        Pagina <span className="font-semibold text-slate-700">{pagination.page}</span> de{' '}
+        <span className="font-semibold text-slate-700">{pagination.totalPages}</span> ({pagination.total} registros)
       </span>
       <div className="flex gap-2">
         <Button

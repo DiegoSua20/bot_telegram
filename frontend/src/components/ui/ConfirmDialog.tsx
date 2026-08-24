@@ -47,7 +47,7 @@ export function ConfirmDialog({ open, options, onConfirm, onCancel, loading }: C
         </>
       }
     >
-      <p className="text-sm text-gray-600">{options.message}</p>
+      <p className="text-sm text-slate-600">{options.message}</p>
       {options.requireReason && (
         <div className="mt-3">
           <Textarea
