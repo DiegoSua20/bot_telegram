@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Printer, Download, Ban } from 'lucide-react';
+import { ArrowLeft, Printer, Download, Ban, Mail } from 'lucide-react';
 import { invoicesApi } from '../api/endpoints';
 import { getErrorMessage } from '../api/client';
 import { openBlobInNewTab } from '../utils/download';
@@ -52,6 +52,18 @@ export function InvoiceDetailPage() {
     onError: (err) => toast.error(getErrorMessage(err)),
   });
 
+  const sendEmailMutation = useMutation({
+    mutationFn: () => invoicesApi.sendEmail(id!),
+    onSuccess: (res) => {
+      if (res.data.sent === false) {
+        toast.error(res.data.message);
+      } else {
+        toast.success(res.data.message);
+      }
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
+  });
+
   if (isLoading || !invoice) {
     return <p className="text-sm text-gray-500">Cargando factura...</p>;
   }
@@ -72,6 +84,15 @@ export function InvoiceDetailPage() {
             </Button>
             <Button variant="secondary" loading={pdfLoading === 'THERMAL'} onClick={() => handleViewPdf('THERMAL')}>
               <Download size={16} /> Ticket termico
+            </Button>
+            <Button
+              variant="secondary"
+              loading={sendEmailMutation.isPending}
+              disabled={!invoice.client.email}
+              title={invoice.client.email ? undefined : 'El cliente no tiene correo registrado'}
+              onClick={() => sendEmailMutation.mutate()}
+            >
+              <Mail size={16} /> Enviar por correo
             </Button>
             {canVoid && invoice.status !== 'ANULADA' && (
               <Button variant="danger" onClick={() => setConfirmOpen(true)}>
@@ -156,7 +177,11 @@ export function InvoiceDetailPage() {
             <p className="text-sm font-medium">{invoice.client.name}</p>
             <p className="text-xs text-gray-500">{invoice.client.code} - {invoice.client.taxId || 'C/F'}</p>
             <p className="text-xs text-gray-500">{invoice.client.phone}</p>
-            <p className="text-xs text-gray-500">{invoice.client.email}</p>
+            {invoice.client.email ? (
+              <p className="text-xs text-gray-500">{invoice.client.email}</p>
+            ) : (
+              <p className="text-xs text-amber-600">Sin correo registrado (no se puede enviar la factura por email)</p>
+            )}
           </Card>
 
           <Card>

@@ -101,6 +101,7 @@ export const invoicesApi = {
   create: (data: unknown) => api.post<Invoice>('/invoices', data),
   cancel: (id: string, reason: string) => api.post<Invoice>(`/invoices/${id}/cancel`, { reason }),
   pdfPath: (id: string, format: 'A4' | 'THERMAL' = 'A4') => `/invoices/${id}/pdf?format=${format}`,
+  sendEmail: (id: string) => api.post<{ message: string; sent?: boolean }>(`/invoices/${id}/send-email`),
 };
 
 // ---------- Credit ----------

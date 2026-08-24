@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Search, Trash2, ScanBarcode, Plus, UserPen, UserPlus } from 'lucide-react';
+import { Search, Trash2, ScanBarcode, Plus, UserPen, UserPlus, AlertTriangle } from 'lucide-react';
 import { cashApi, clientsApi, invoicesApi, productsApi, seriesApi } from '../api/endpoints';
 import { getErrorMessage } from '../api/client';
 import { openBlobInNewTab } from '../utils/download';
@@ -14,6 +14,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { useCurrency } from '../hooks/useCurrency';
+import { useCompanyStore } from '../store/companyStore';
 
 const DEFAULT_CLIENT_NAME = 'Consumidor Final';
 
@@ -106,6 +107,9 @@ export function InvoicingPage() {
 
   const { data: series } = useQuery({ queryKey: ['series'], queryFn: () => seriesApi.list().then((r) => r.data) });
   const { data: cashSession } = useQuery({ queryKey: ['cash-current'], queryFn: () => cashApi.current().then((r) => r.data) });
+  const companyConfig = useCompanyStore((s) => s.config);
+  const cashRegisterBlocking =
+    !!companyConfig?.requireOpenCashRegister && !cashSession && paymentMethod !== 'CREDITO';
 
   useEffect(() => {
     if (series && series.length > 0 && !seriesId) {
@@ -242,6 +246,10 @@ export function InvoicingPage() {
   });
 
   const handleSubmit = () => {
+    if (cashRegisterBlocking) {
+      toast.error('Debe abrir su caja antes de poder facturar');
+      return;
+    }
     if (!client) {
       toast.error('Seleccione un cliente');
       return;
@@ -270,9 +278,24 @@ export function InvoicingPage() {
         subtitle={
           cashSession
             ? `Caja abierta - Monto inicial ${format(cashSession.openingAmount)}`
-            : 'No tiene una caja abierta. Puede facturar, pero se recomienda abrir caja.'
+            : companyConfig?.requireOpenCashRegister
+              ? 'No tiene una caja abierta. Debe abrirla para poder facturar (excepto ventas al credito).'
+              : 'No tiene una caja abierta. Puede facturar, pero se recomienda abrir caja.'
         }
       />
+
+      {cashRegisterBlocking && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <AlertTriangle size={18} className="shrink-0" />
+          <span className="flex-1">
+            La empresa exige tener caja abierta para facturar. Puede facturar al credito sin abrir caja, o{' '}
+            <Link to="/caja" className="font-semibold underline hover:text-amber-900">
+              abrir su caja
+            </Link>{' '}
+            para continuar con otros metodos de pago.
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -573,7 +596,13 @@ export function InvoicingPage() {
             )}
           </Card>
 
-          <Button className="w-full !py-3.5 text-base" size="md" loading={createMutation.isPending} onClick={handleSubmit}>
+          <Button
+            className="w-full !py-3.5 text-base"
+            size="md"
+            loading={createMutation.isPending}
+            disabled={cashRegisterBlocking}
+            onClick={handleSubmit}
+          >
             Generar factura
           </Button>
         </div>

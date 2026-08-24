@@ -14,6 +14,7 @@ const DEFAULT_CONFIG = {
   country: 'Guatemala',
   invoiceFormat: 'A4',
   allowOversell: false,
+  requireOpenCashRegister: false,
 };
 
 export async function getConfig() {

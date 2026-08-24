@@ -48,6 +48,9 @@ export function ForgotPasswordPage() {
             </Button>
           </form>
         )}
+        <p className="mt-4 text-center text-xs text-slate-400">
+          ¿No te llega el correo? Pide a un administrador que reinicie tu contrasena desde el modulo de Usuarios.
+        </p>
         <div className="mt-5 text-center">
           <Link to="/login" className="text-sm font-medium text-brand-600 hover:text-brand-700 hover:underline">
             Volver al inicio de sesion

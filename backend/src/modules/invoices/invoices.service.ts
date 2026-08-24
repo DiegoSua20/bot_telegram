@@ -100,6 +100,13 @@ export async function createInvoice(input: CreateInvoiceInput) {
 
   const openSession = await cashService.findOpenSessionForUser(input.userId);
 
+  if (!isCredit && !openSession) {
+    const companyConfig = await prisma.companyConfig.findFirst();
+    if (companyConfig?.requireOpenCashRegister) {
+      throw ApiError.badRequest('Debe abrir su caja antes de poder facturar. Vaya al modulo de Caja.');
+    }
+  }
+
   const invoice = await prisma.$transaction(async (tx) => {
     const number = await seriesService.reserveNextNumber(tx, series.id);
     const fullNumber = `${series.name}-${String(number).padStart(6, '0')}`;

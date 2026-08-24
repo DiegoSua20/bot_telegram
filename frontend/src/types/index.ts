@@ -178,6 +178,7 @@ export interface CompanyConfig {
   country: string;
   invoiceFormat: string;
   allowOversell: boolean;
+  requireOpenCashRegister: boolean;
 }
 
 export interface CashDenominationCount {

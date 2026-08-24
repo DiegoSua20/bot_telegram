@@ -13,6 +13,7 @@ invoicesRouter.use(requireAuth);
 invoicesRouter.get('/', requirePermission(PERMISSIONS.INVOICES_VIEW), validate(listInvoicesSchema), invoicesController.listInvoices);
 invoicesRouter.get('/:id', requirePermission(PERMISSIONS.INVOICES_VIEW), invoicesController.getInvoice);
 invoicesRouter.get('/:id/pdf', requirePermission(PERMISSIONS.INVOICES_VIEW), downloadInvoicePdf);
+invoicesRouter.post('/:id/send-email', requirePermission(PERMISSIONS.INVOICES_VIEW), invoicesController.sendInvoiceEmail);
 invoicesRouter.post(
   '/',
   requirePermission(PERMISSIONS.INVOICES_CREATE),

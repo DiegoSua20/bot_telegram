@@ -30,6 +30,7 @@ export function CompanyConfigPage() {
     country: 'Guatemala',
     invoiceFormat: 'A4',
     allowOversell: false,
+    requireOpenCashRegister: false,
   });
   const [newSeriesName, setNewSeriesName] = useState('');
 
@@ -48,6 +49,7 @@ export function CompanyConfigPage() {
         country: config.country,
         invoiceFormat: config.invoiceFormat,
         allowOversell: config.allowOversell,
+        requireOpenCashRegister: config.requireOpenCashRegister,
       });
     }
   }, [config]);
@@ -124,6 +126,14 @@ export function CompanyConfigPage() {
             <label className="col-span-2 flex items-center gap-2 text-sm text-gray-700">
               <input type="checkbox" checked={form.allowOversell} onChange={(e) => setForm({ ...form, allowOversell: e.target.checked })} />
               Permitir vender mas cantidad de la disponible en inventario
+            </label>
+            <label className="col-span-2 flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={form.requireOpenCashRegister}
+                onChange={(e) => setForm({ ...form, requireOpenCashRegister: e.target.checked })}
+              />
+              Exigir caja abierta para poder facturar (no aplica a ventas al credito)
             </label>
           </div>
           <div className="mt-4">

@@ -14,5 +14,6 @@ export const updateConfigSchema = z.object({
     country: z.string().min(1).optional(),
     invoiceFormat: z.enum(['A4', 'CARTA', 'THERMAL']).optional(),
     allowOversell: z.boolean().optional(),
+    requireOpenCashRegister: z.boolean().optional(),
   }),
 });

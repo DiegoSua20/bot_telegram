@@ -383,6 +383,7 @@ model CompanyConfig {
   country        String   @default("Guatemala")
   invoiceFormat  String   @default("A4")
   allowOversell  Boolean  @default(false)
+  requireOpenCashRegister Boolean @default(false)
   updatedAt      DateTime @updatedAt
 
   @@map("company_config")
