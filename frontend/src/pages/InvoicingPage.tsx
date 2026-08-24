@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Search, Trash2, ScanBarcode, Plus, UserPen } from 'lucide-react';
+import { Search, Trash2, ScanBarcode, Plus, UserPen, UserPlus } from 'lucide-react';
 import { cashApi, clientsApi, invoicesApi, productsApi, seriesApi } from '../api/endpoints';
 import { getErrorMessage } from '../api/client';
 import { openBlobInNewTab } from '../utils/download';
@@ -12,9 +12,12 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { Input, Select, Textarea } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { Modal } from '../components/ui/Modal';
 import { useCurrency } from '../hooks/useCurrency';
 
 const DEFAULT_CLIENT_NAME = 'Consumidor Final';
+
+const emptyNewClientForm = { name: '', taxId: '', phone: '', email: '' };
 
 interface CartItem {
   productId: string;
@@ -77,6 +80,8 @@ export function InvoicingPage() {
   const [clientSearch, setClientSearch] = useState('');
   const [client, setClient] = useState<Client | null>(null);
   const [clientTouched, setClientTouched] = useState(false);
+  const [newClientModalOpen, setNewClientModalOpen] = useState(false);
+  const [newClientForm, setNewClientForm] = useState(emptyNewClientForm);
   const productSearchRef = useRef<HTMLInputElement>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('EFECTIVO');
   const [payments, setPayments] = useState<PaymentRow[]>([{ method: 'EFECTIVO', amount: 0, reference: '' }]);
@@ -189,6 +194,27 @@ export function InvoicingPage() {
     setPayments([{ method: 'EFECTIVO', amount: 0, reference: '' }]);
     setCreditDueDate('');
     productSearchRef.current?.focus();
+  };
+
+  const createClientMutation = useMutation({
+    mutationFn: () => clientsApi.create(newClientForm),
+    onSuccess: (res) => {
+      toast.success(`Cliente ${res.data.name} creado y seleccionado`);
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setClient(res.data);
+      setClientTouched(true);
+      setNewClientModalOpen(false);
+      setNewClientForm(emptyNewClientForm);
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
+  });
+
+  const handleCreateClient = () => {
+    if (!newClientForm.name.trim()) {
+      toast.error('El nombre del cliente es requerido');
+      return;
+    }
+    createClientMutation.mutate();
   };
 
   const createMutation = useMutation({
@@ -419,6 +445,15 @@ export function InvoicingPage() {
                     ))}
                   </div>
                 )}
+                <button
+                  onClick={() => {
+                    setNewClientForm({ ...emptyNewClientForm, name: clientSearch });
+                    setNewClientModalOpen(true);
+                  }}
+                  className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+                >
+                  <UserPlus size={14} /> Nuevo cliente
+                </button>
               </div>
             )}
             {series && series.length > 1 && (
@@ -543,6 +578,56 @@ export function InvoicingPage() {
           </Button>
         </div>
       </div>
+
+      <Modal
+        open={newClientModalOpen}
+        onClose={() => setNewClientModalOpen(false)}
+        title="Nuevo cliente"
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setNewClientModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button loading={createClientMutation.isPending} onClick={handleCreateClient}>
+              Crear y seleccionar
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <Input
+            label="Nombre"
+            required
+            autoFocus
+            value={newClientForm.name}
+            onChange={(e) => setNewClientForm({ ...newClientForm, name: e.target.value })}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreateClient()}
+          />
+          <Input
+            label="NIT / Identificacion"
+            value={newClientForm.taxId}
+            onChange={(e) => setNewClientForm({ ...newClientForm, taxId: e.target.value })}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreateClient()}
+          />
+          <Input
+            label="Telefono"
+            value={newClientForm.phone}
+            onChange={(e) => setNewClientForm({ ...newClientForm, phone: e.target.value })}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreateClient()}
+          />
+          <Input
+            label="Correo"
+            type="email"
+            value={newClientForm.email}
+            onChange={(e) => setNewClientForm({ ...newClientForm, email: e.target.value })}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreateClient()}
+          />
+          <p className="text-xs text-slate-400">
+            El codigo de cliente se genera automaticamente. Podra completar mas datos despues desde el modulo de Clientes.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }
