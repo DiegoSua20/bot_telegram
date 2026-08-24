@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Printer, Download, Ban } from 'lucide-react';
 import { invoicesApi } from '../api/endpoints';
 import { getErrorMessage } from '../api/client';
+import { openBlobInNewTab } from '../utils/download';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Card } from '../components/ui/Card';
 import { StatusBadge } from '../components/ui/Badge';
@@ -21,6 +22,18 @@ export function InvoiceDetailPage() {
   const queryClient = useQueryClient();
   const canVoid = useAuthStore((s) => s.hasPermission(PERMISSIONS.INVOICES_VOID));
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState<'A4' | 'THERMAL' | null>(null);
+
+  const handleViewPdf = async (invoiceFormat: 'A4' | 'THERMAL') => {
+    setPdfLoading(invoiceFormat);
+    try {
+      await openBlobInNewTab(invoicesApi.pdfPath(id!, invoiceFormat));
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setPdfLoading(null);
+    }
+  };
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', id],
@@ -54,16 +67,12 @@ export function InvoiceDetailPage() {
         subtitle={dayjs(invoice.createdAt).format('DD/MM/YYYY HH:mm')}
         actions={
           <>
-            <a href={invoicesApi.pdfUrl(invoice.id, 'A4')} target="_blank" rel="noreferrer">
-              <Button variant="secondary">
-                <Printer size={16} /> Imprimir A4
-              </Button>
-            </a>
-            <a href={invoicesApi.pdfUrl(invoice.id, 'THERMAL')} target="_blank" rel="noreferrer">
-              <Button variant="secondary">
-                <Download size={16} /> Ticket termico
-              </Button>
-            </a>
+            <Button variant="secondary" loading={pdfLoading === 'A4'} onClick={() => handleViewPdf('A4')}>
+              <Printer size={16} /> Imprimir A4
+            </Button>
+            <Button variant="secondary" loading={pdfLoading === 'THERMAL'} onClick={() => handleViewPdf('THERMAL')}>
+              <Download size={16} /> Ticket termico
+            </Button>
             {canVoid && invoice.status !== 'ANULADA' && (
               <Button variant="danger" onClick={() => setConfirmOpen(true)}>
                 <Ban size={16} /> Anular factura

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Search, Trash2, ScanBarcode, Plus, X } from 'lucide-react';
 import { cashApi, clientsApi, invoicesApi, productsApi, seriesApi } from '../api/endpoints';
 import { getErrorMessage } from '../api/client';
+import { openBlobInNewTab } from '../utils/download';
 import { Client, PaymentMethod, Product } from '../types';
 import { Card } from '../components/ui/Card';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -179,7 +180,7 @@ export function InvoicingPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['cash-current'] });
-      window.open(invoicesApi.pdfUrl(res.data.id), '_blank');
+      openBlobInNewTab(invoicesApi.pdfPath(res.data.id)).catch(() => undefined);
       resetForm();
       navigate(`/facturas/${res.data.id}`);
     },

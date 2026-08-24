@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download, FileSpreadsheet, Search } from 'lucide-react';
 import dayjs from 'dayjs';
+import toast from 'react-hot-toast';
 import { productsApi, reportsApi } from '../api/endpoints';
+import { getErrorMessage } from '../api/client';
+import { downloadBlob } from '../utils/download';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Card } from '../components/ui/Card';
 import { Select, Input } from '../components/ui/Input';
@@ -35,6 +38,7 @@ export function ReportsPage() {
   const [productId, setProductId] = useState('');
   const [productSearch, setProductSearch] = useState('');
   const [triggered, setTriggered] = useState(false);
+  const [exportLoading, setExportLoading] = useState<'xlsx' | 'pdf' | null>(null);
 
   const { data: types } = useQuery({ queryKey: ['report-types'], queryFn: () => reportsApi.types().then((r) => r.data) });
   const { data: productResults } = useQuery({
@@ -58,6 +62,17 @@ export function ReportsPage() {
     }
     setTriggered(true);
     refetch();
+  };
+
+  const handleExport = async (exportFormat: 'xlsx' | 'pdf') => {
+    setExportLoading(exportFormat);
+    try {
+      await downloadBlob(reportsApi.exportPath(type, exportFormat, params), `${type}.${exportFormat}`);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setExportLoading(null);
+    }
   };
 
   return (
@@ -112,16 +127,12 @@ export function ReportsPage() {
           </Button>
           {triggered && report && (
             <>
-              <a href={reportsApi.exportUrl(type, 'xlsx', params)}>
-                <Button variant="secondary">
-                  <FileSpreadsheet size={16} /> Excel
-                </Button>
-              </a>
-              <a href={reportsApi.exportUrl(type, 'pdf', params)}>
-                <Button variant="secondary">
-                  <Download size={16} /> PDF
-                </Button>
-              </a>
+              <Button variant="secondary" loading={exportLoading === 'xlsx'} onClick={() => handleExport('xlsx')}>
+                <FileSpreadsheet size={16} /> Excel
+              </Button>
+              <Button variant="secondary" loading={exportLoading === 'pdf'} onClick={() => handleExport('pdf')}>
+                <Download size={16} /> PDF
+              </Button>
             </>
           )}
         </div>

@@ -99,7 +99,7 @@ export const invoicesApi = {
   get: (id: string) => api.get<Invoice>(`/invoices/${id}`),
   create: (data: unknown) => api.post<Invoice>('/invoices', data),
   cancel: (id: string, reason: string) => api.post<Invoice>(`/invoices/${id}/cancel`, { reason }),
-  pdfUrl: (id: string, format: 'A4' | 'THERMAL' = 'A4') => `/api/invoices/${id}/pdf?format=${format}`,
+  pdfPath: (id: string, format: 'A4' | 'THERMAL' = 'A4') => `/invoices/${id}/pdf?format=${format}`,
 };
 
 // ---------- Credit ----------
@@ -135,9 +135,9 @@ export const dashboardApi = {
 export const reportsApi = {
   types: () => api.get<string[]>('/reports'),
   get: (type: string, params: Record<string, string>) => api.get(`/reports/${type}`, { params }),
-  exportUrl: (type: string, format: 'xlsx' | 'pdf', params: Record<string, string>) => {
+  exportPath: (type: string, format: 'xlsx' | 'pdf', params: Record<string, string>) => {
     const search = new URLSearchParams({ ...params, format }).toString();
-    return `/api/reports/${type}/export?${search}`;
+    return `/reports/${type}/export?${search}`;
   },
 };
 
