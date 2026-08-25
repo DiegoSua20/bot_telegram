@@ -72,6 +72,7 @@ export const categoriesApi = {
 export const productsApi = {
   list: (params: Record<string, string>) => api.get<PaginatedResult<Product>>('/products', { params }),
   search: (q: string) => api.get<Product[]>('/products/search', { params: { q } }),
+  frequent: (limit = 8) => api.get<Product[]>('/products/frequent', { params: { limit: String(limit) } }),
   get: (id: string) => api.get<Product>(`/products/${id}`),
   byBarcode: (barcode: string) => api.get<Product>(`/products/barcode/${barcode}`),
   create: (data: unknown) => api.post<Product>('/products', data),

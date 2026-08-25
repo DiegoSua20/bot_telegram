@@ -105,6 +105,12 @@ export function InvoicingPage() {
     queryFn: () => clientsApi.search(DEFAULT_CLIENT_NAME).then((r) => r.data),
   });
 
+  const { data: frequentProducts } = useQuery({
+    queryKey: ['pos-frequent-products'],
+    queryFn: () => productsApi.frequent(8).then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: series } = useQuery({ queryKey: ['series'], queryFn: () => seriesApi.list().then((r) => r.data) });
   const { data: cashSession } = useQuery({ queryKey: ['cash-current'], queryFn: () => cashApi.current().then((r) => r.data) });
   const companyConfig = useCompanyStore((s) => s.config);
@@ -234,13 +240,29 @@ export function InvoicingPage() {
         creditDueDate: paymentMethod === 'CREDITO' && creditDueDate ? creditDueDate : undefined,
       }),
     onSuccess: (res) => {
-      toast.success(`Factura ${res.data.fullNumber} creada correctamente`);
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['cash-current'] });
+      queryClient.invalidateQueries({ queryKey: ['pos-frequent-products'] });
       openBlobInNewTab(invoicesApi.pdfPath(res.data.id)).catch(() => undefined);
       resetForm();
-      navigate(`/facturas/${res.data.id}`);
+      toast.success(
+        (t) => (
+          <span>
+            Factura <strong>{res.data.fullNumber}</strong> creada correctamente.{' '}
+            <button
+              className="font-semibold text-brand-700 underline"
+              onClick={() => {
+                toast.dismiss(t.id);
+                navigate(`/facturas/${res.data.id}`);
+              }}
+            >
+              Ver factura
+            </button>
+          </span>
+        ),
+        { duration: 7000 },
+      );
     },
     onError: (err) => toast.error(getErrorMessage(err)),
   });
@@ -338,6 +360,24 @@ export function InvoicingPage() {
                 />
               </div>
             </div>
+
+            {frequentProducts && frequentProducts.length > 0 && (
+              <div className="mt-3">
+                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">Productos frecuentes</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {frequentProducts.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => addToCart(p)}
+                      className="flex flex-col items-start rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/50 active:scale-[0.98]"
+                    >
+                      <span className="line-clamp-1 text-sm font-medium text-slate-800">{p.name}</span>
+                      <span className="mt-0.5 text-xs font-semibold text-brand-600">{format(p.salePrice)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 overflow-hidden rounded-xl border border-slate-100">
               <table className="min-w-full divide-y divide-slate-100 text-sm">

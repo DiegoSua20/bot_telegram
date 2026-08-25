@@ -1,13 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import dayjs from 'dayjs';
-import { DollarSign, FileText, XCircle, Wallet, Users, AlertTriangle, TrendingUp } from 'lucide-react';
+import { DollarSign, FileText, XCircle, Wallet, Users, AlertTriangle, TrendingUp, Receipt, UserPlus } from 'lucide-react';
 import { dashboardApi } from '../api/endpoints';
 import { StatCard, Card } from '../components/ui/Card';
 import { PageHeader } from '../components/ui/PageHeader';
 import { StatusBadge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 import { useCurrency } from '../hooks/useCurrency';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
+import { PERMISSIONS } from '../constants/permissions';
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-4 font-display text-sm font-bold text-slate-800">{children}</h3>;
@@ -15,6 +18,8 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 export function DashboardPage() {
   const { format } = useCurrency();
+  const navigate = useNavigate();
+  const hasPermission = useAuthStore((s) => s.hasPermission);
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => dashboardApi.get().then((r) => r.data),
@@ -34,7 +39,29 @@ export function DashboardPage() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" subtitle="Resumen general del negocio" />
+      <PageHeader
+        title="Dashboard"
+        subtitle="Resumen general del negocio"
+        actions={
+          <>
+            {hasPermission(PERMISSIONS.INVOICES_CREATE) && (
+              <Button size="sm" onClick={() => navigate('/facturacion')}>
+                <Receipt size={15} /> Nueva venta
+              </Button>
+            )}
+            {hasPermission(PERMISSIONS.CASH_MANAGE, PERMISSIONS.CASH_VIEW) && (
+              <Button size="sm" variant="secondary" onClick={() => navigate('/caja')}>
+                <Wallet size={15} /> Caja
+              </Button>
+            )}
+            {hasPermission(PERMISSIONS.CLIENTS_MANAGE) && (
+              <Button size="sm" variant="secondary" onClick={() => navigate('/clientes')}>
+                <UserPlus size={15} /> Nuevo cliente
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Ventas de hoy" value={format(data.salesToday)} icon={<DollarSign size={20} />} tone="brand" />

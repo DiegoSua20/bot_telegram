@@ -55,6 +55,34 @@ export async function listProducts(params: ListParams) {
   return buildPaginationResult(items, total, page, pageSize);
 }
 
+export async function getFrequentProducts(limit = 8) {
+  const grouped = await prisma.invoiceDetail.groupBy({
+    by: ['productId'],
+    where: { invoice: { status: { not: 'ANULADA' } } },
+    _sum: { quantity: true },
+    orderBy: { _sum: { quantity: 'desc' } },
+    take: limit,
+  });
+
+  if (grouped.length === 0) {
+    // Sin historial de ventas todavia (negocio nuevo): mostrar los primeros productos activos.
+    return prisma.product.findMany({
+      where: { active: true },
+      take: limit,
+      orderBy: { name: 'asc' },
+      include: { category: true },
+    });
+  }
+
+  const productIds = grouped.map((g) => g.productId);
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds }, active: true },
+    include: { category: true },
+  });
+  const rank = new Map(productIds.map((id, index) => [id, index]));
+  return products.sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0));
+}
+
 export async function searchProducts(term: string) {
   if (!term) return [];
   return prisma.product.findMany({

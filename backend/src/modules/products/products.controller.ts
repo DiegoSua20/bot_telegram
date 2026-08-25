@@ -11,6 +11,11 @@ export const searchProducts = asyncHandler(async (req: Request, res: Response) =
   res.json(await productsService.searchProducts(String(req.query.q ?? '')));
 });
 
+export const getFrequentProducts = asyncHandler(async (req: Request, res: Response) => {
+  const limit = Math.min(20, Math.max(1, Number(req.query.limit ?? 8) || 8));
+  res.json(await productsService.getFrequentProducts(limit));
+});
+
 export const getProduct = asyncHandler(async (req: Request, res: Response) => {
   res.json(await productsService.getProduct(req.params.id));
 });

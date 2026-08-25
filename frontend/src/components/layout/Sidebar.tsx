@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Receipt,
@@ -19,6 +20,7 @@ import clsx from 'clsx';
 import { useAuthStore } from '../../store/authStore';
 import { useCompanyStore } from '../../store/companyStore';
 import { PERMISSIONS } from '../../constants/permissions';
+import { productsApi } from '../../api/endpoints';
 
 interface NavItem {
   to: string;
@@ -71,6 +73,16 @@ export function Sidebar({ open }: { open: boolean }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const config = useCompanyStore((s) => s.config);
 
+  const canSeeInventory = hasPermission(PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.INVENTORY_MANAGE);
+  const { data: lowStockData } = useQuery({
+    queryKey: ['sidebar-low-stock-count'],
+    queryFn: () => productsApi.list({ lowStock: 'true', pageSize: '1' }).then((r) => r.data),
+    enabled: canSeeInventory,
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+  });
+  const lowStockCount = lowStockData?.pagination.total ?? 0;
+
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => !item.permissions || hasPermission(...item.permissions)),
@@ -117,7 +129,12 @@ export function Sidebar({ open }: { open: boolean }) {
                   {({ isActive }) => (
                     <>
                       <item.icon size={17} className={isActive ? 'text-brand-400' : 'text-slate-500'} />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {item.to === '/inventario' && lowStockCount > 0 && (
+                        <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                          {lowStockCount}
+                        </span>
+                      )}
                     </>
                   )}
                 </NavLink>

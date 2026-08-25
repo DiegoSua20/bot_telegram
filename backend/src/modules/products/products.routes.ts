@@ -11,6 +11,7 @@ productsRouter.use(requireAuth, requirePermission(PERMISSIONS.PRODUCTS_VIEW, PER
 
 productsRouter.get('/', validate(listProductsSchema), productsController.listProducts);
 productsRouter.get('/search', productsController.searchProducts);
+productsRouter.get('/frequent', productsController.getFrequentProducts);
 productsRouter.get('/barcode/:barcode', productsController.getProductByBarcode);
 productsRouter.get('/:id', productsController.getProduct);
 productsRouter.post(
